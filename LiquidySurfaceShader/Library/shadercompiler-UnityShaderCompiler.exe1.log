@@ -1,0 +1,9 @@
+Base path: C:/Program Files/Unity/Editor/Data
+Cmd: initializeCompiler
+Cmd: compileComputeKernel
+  error: 1 plat 4 at LiquidySurfaceCS.compute(29): implicit truncation of vector type
+  error: 1 plat 4 at LiquidySurfaceCS.compute(30): implicit truncation of vector type
+  error: 1 plat 4 at LiquidySurfaceCS.compute(53): implicit truncation of vector type
+  error: 1 plat 4 at LiquidySurfaceCS.compute(54): 'adfloatt': implicit truncation of vector type
+  error: 1 plat 4 at LiquidySurfaceCS.compute(54): implicit truncation of vector type
+  api=4 insize=1816 outsize=3341 ok=1

@@ -1,0 +1,60 @@
+﻿#pragma kernel CalcDispersion
+#pragma kernel CalcLiquidySurface
+
+#include "Dispersion.cginc"
+
+RWTexture2D<float4> out_color;
+RWTexture2D<float4> out_normal;
+RWTexture2D<float4> out_vel;
+
+Texture2D<float4> uPVel;
+SamplerState sampleruPVel;
+Texture2D<float4> uTexNoise;
+SamplerState sampleruTexNoise;
+
+float2 uRes;
+float uTime;
+bool uBassHit, uTrebHit, uVolHit;
+float uTreb, uBass, uVol;
+
+[numthreads(8, 8, 1)]
+void CalcDispersion(uint3 id : SV_DispatchThreadID)
+{
+	float2 coords = (float2)id.xy / uRes;
+	float2 pVel = uPVel.SampleLevel(sampleruPVel, coords * 1., 0).rg;
+
+	float2 n = adfloatt(uTexNoise, sampleruTexNoise, 
+		coords * 3., pVel * 15., 1./uRes).rg;
+
+	pVel = adfloatt(uPVel, sampleruPVel, coords, n * 2., 1./uRes);
+	float2 mf = adfloatt(uPVel, sampleruPVel, n, pVel * .2, 1./uRes);
+	float2 ma = Ma(uPVel, sampleruPVel, coords, 1./uRes);
+	pVel = pVel - ma * .12 + mf * .004;
+
+	float mAudioInput = 1. - pow(uVol, 3.);
+	pVel *= .99 * mAudioInput;
+
+	if ((length(pVel) < .1 && length(n) != 0.)) 
+		out_vel[id.xy] = float4((n - ma*.003 + mf * .001) * 12. * mAudioInput, 0, 1);
+	else
+	{
+		float ld = length(pVel);
+		pVel = pVel - 0.005* ld*ld*ld*normz(pVel);
+		out_vel[id.xy] = float4(pVel, 0, 1);
+	}
+}
+
+[numthreads(8,8,1)]
+void CalcLiquidySurface(uint3 id : SV_DispatchThreadID)
+{
+	float4 mVel = uPVel.Load(id, 0);
+	float2 coords = (float2)id.xy / uRes;
+	float3 mNoise = uTexNoise.SampleLevel(sampleruTexNoise, coords, 0).rgb;
+	mVel = adfloatt(uPVel, sampleruPVel, coords, mVel * 1. + mNoise.rg * 10., 1. / uRes);
+	mNoise = adfloatt(uTexNoise, sampleruPVel, coords, mVel * 30., 1. / uRes);
+
+	float3 mCol = pow(length(mVel), 2.) * .2 * mNoise;
+
+	out_color[id.xy] = float4(mCol, 1.);
+	out_normal[id.xy] = normalize(mVel);
+}
