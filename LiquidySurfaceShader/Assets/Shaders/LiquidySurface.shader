@@ -3,7 +3,7 @@
 		_Color ("Color", Color) = (1,1,1,1)
 		_MainTex ("Albedo (RGB)", 2D) = "white" {}
 		_BumpMap("Bumpmap", 2D) = "bump" {}
-		_Glossiness("Smoothness", Range(0,1)) = 0.5
+		_Glossiness("Smoothness", Range(0,1)) = 1.0
 		_Metallic("Metallic", Range(0,1)) = 0.0
 	}
 		SubShader{
@@ -32,6 +32,8 @@
 			float2 uv_MainTex;
 			float2 uv_BumpMap;
 			float3 worldRefl;
+			float3 viewDir;
+			float3 worldPos;
 			INTERNAL_DATA
 		};
 
@@ -43,6 +45,11 @@
 		float uTesselEdge;
 		float uTime;
 		float uVol;
+		float uNormalInverse;
+		float uRotRad;
+		float3 uRotAxis;
+
+		const float PI = 3.14159265;
 
 		// Add instancing support for this shader. You need to check 'Enable Instancing' on materials that use the shader.
 		// See https://docs.unity3d.com/Manual/GPUInstancing.html for more information about instancing.
@@ -72,30 +79,33 @@
 		void vert(inout appdata v)
 		{
 			float2 coords = v.texcoord.xy;
-			/*coords = mul(
-				rotationMatrix(normalize(float3(0, 0, 1)), uTime * -.001), float4(coords, 0., 1.)).xy;*/
+			coords.x = frac((coords.x - .5) * 2.);
 
-			float d = length(tex2Dlod(_BumpMap, float4(frac(coords), 0, 0)).rg) * -.02;
+			float d = length(tex2Dlod(_BumpMap, float4(coords, 0, 0)).rgb) * .02 * (uNormalInverse-.5)*2.;
 			v.vertex.xyz += v.normal * d;
 			v.vertex.xyz += v.normal * uVol * .03;
+
+			v.vertex.xyz = mul(
+				rotationMatrix(uRotAxis, uTime * -.001 + uRotRad), float4(v.vertex.xyz, 1.)).xyz;
 		}
 
 		void surf (Input IN, inout SurfaceOutputStandard o) {
 			float2 coords = IN.uv_MainTex;
-			/*coords = mul(
-				rotationMatrix(normalize(float3(0, 0, 1)), uTime * -.001), float4(coords, 0., 1.)).xy;*/
+			coords.x = frac((coords.x - .5) * 2.);
 
-			fixed4 c = tex2D (_MainTex, frac(coords)) * _Color;
+			fixed4 c = tex2D (_MainTex, coords) * _Color;
 			o.Albedo = c.rgb;
 
 			coords = IN.uv_BumpMap;
-			/*coords = mul(
-				rotationMatrix(normalize(float3(0, 0, 1)), uTime * -.001), float4(coords, 0., 1.)).xy;*/
+			coords.x = frac((coords.x - .5) * 2.);
 
-			o.Normal = UnpackNormal(tex2D(_BumpMap, frac(coords)));
+			o.Normal = UnpackNormal(tex2D(_BumpMap, coords));
+
 			o.Metallic = _Metallic;
 			o.Smoothness = _Glossiness;
-			o.Emission = texCUBE(_Cube, WorldReflectionVector(IN, o.Normal)).rgb * .2;
+			
+			float3 mCube = texCUBE(_Cube, WorldReflectionVector(IN, o.Normal)).rgb * .3;
+			o.Emission = mCube;
 			o.Alpha = c.a;
 		}
 		ENDCG

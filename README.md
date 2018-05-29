@@ -13,7 +13,7 @@ Dispersion map in 2-pass feedback shader to Unity's surface shader as a normal m
 
 ## Resources 
 
-### audio processing 
+### Audio Processing 
 * [LASP - Audio Processing Unity Plugin by Keijiro Takahashi](https://github.com/keijiro/Lasp) 
 
 ### Hdri
@@ -22,4 +22,4 @@ Dispersion map in 2-pass feedback shader to Unity's surface shader as a normal m
 
 ## Dev Environment
 * Windows 10 / GeForce GTX 970
-* Unity3D 2017.4.0f1
+* Unity3D 2018.1.2f1

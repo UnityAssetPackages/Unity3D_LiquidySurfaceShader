@@ -396,6 +396,8 @@
     <None Include="Assets\Shaders\Dispersion.cginc" />
     <None Include="Assets\Shaders\LiquidySurface.shader" />
     <None Include="Assets\Shaders\LiquidySurfaceCS.compute" />
+    <None Include="Assets\Shaders\SimplexNoise2D.cginc" />
+    <None Include="Assets\Shaders\SimplexNoise3D.cginc" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="GenerateTargetFrameworkMonikerAttribute" />

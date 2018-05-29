@@ -11,6 +11,16 @@ public class LiquidSurface : MonoBehaviour {
     public float mGlossiness, mMetallic;
     [Range(0f, 100f)]
     public float mTesselEdge;
+    [Range(0f, 1f)]
+    public float mNormalInverse;
+    private float mNormalInvere_target = 0f;
+
+    private float mRotRad = 0f;
+    private float mRotRad_target = 0f;
+    private float mRotRad_vel = 0f;
+    private Vector3 mRotAxis = new Vector3(0f, 1f, 0f);
+    private Vector3 mRotAxis_target = new Vector3(0f, 1f, 0f);
+    private float mRotAxis_vel = 0f;
 
     private Material mSurfaceMat;
 
@@ -63,6 +73,75 @@ public class LiquidSurface : MonoBehaviour {
         mCs.SetBool("uVolHit", volHit);
 
         mSurfaceMat.SetFloat("uVol", vol);
+
+        // normal event
+        shuffleNormal(bassHit);
+
+        // rotation event
+        shuffleRot(bassHit);
+    }
+
+    private void shuffleNormal(bool trigger)
+    {
+        if (Random.Range(0f, 1f) > 0.99f && trigger)
+            mNormalInvere_target = Random.Range(0f, 1f) > 0.5f ? 1f : 0f;
+
+        if (Mathf.Abs(mNormalInvere_target - mNormalInverse) > 0.01f)
+            mNormalInverse += (mNormalInvere_target - mNormalInverse) * 0.02f;
+        else
+            mNormalInverse = mNormalInvere_target;
+    }
+
+    private void shuffleRot(bool trigger)
+    {
+        if (Random.Range(0f, 1f) > 0.65f && trigger)
+        {
+            mRotRad_target = Random.Range(-360f, 360f) * Mathf.PI / 180f;
+
+            mRotAxis_target = new Vector3(Random.Range(-1f, 1f), Random.Range(-1f, 1f), Random.Range(-1f, 1f));
+            mRotAxis_target.Normalize();
+        }
+
+        if (Mathf.Abs(mRotRad_target - mRotRad) > 0.01f)
+        {
+            // update angle
+            float d = mRotRad_target - mRotRad;
+
+            if(d > 1f)
+            {
+                mRotRad_vel += 0.002f / (d * d);
+            }
+            mRotRad += mRotRad_vel;
+            mRotRad_vel *= 0.93f;
+
+            // update axis
+            //Vector3 dir = mRotAxis_target - mRotAxis;
+            //float dist = dir.magnitude;
+            //dir.Normalize();
+
+            //if (dist > 1f)
+            //{
+            //    mRotAxis_vel += 0.0001f / (dist * dist);
+            //    mRotAxis_vel = Mathf.Clamp(mRotAxis_vel, 0f, 0.0009f);
+            //}
+
+            //mRotAxis_vel *= 0.93f;
+
+            //if (dist > 0.01f)
+            //{
+            //    mRotAxis += dir * mRotAxis_vel;
+            //}
+        }
+        else
+        {
+            mRotRad_target = Random.Range(-360f, 360f) * Mathf.PI / 180f;
+
+            mRotAxis_target = new Vector3(Random.Range(-1f, 1f), Random.Range(-1f, 1f), Random.Range(-1f, 1f));
+            mRotAxis_target.Normalize();
+        }
+
+        mSurfaceMat.SetFloat("uRotRad", -mRotRad);
+        mSurfaceMat.SetVector("uRotAxis", mRotAxis);
     }
 
     private void updateSurfaceMaterial()
@@ -74,11 +153,13 @@ public class LiquidSurface : MonoBehaviour {
         mSurfaceMat.SetFloat("_Glossiness", mGlossiness);
         mSurfaceMat.SetFloat("uTesselEdge", mTesselEdge);
         mSurfaceMat.SetFloat("uTime", Time.frameCount);
+        mSurfaceMat.SetFloat("uNormalInverse", mNormalInverse);
     }
 
     private void updateCsRenderTexture()
     {
         mCs.SetFloat("uTime", Time.frameCount);
+        mCs.SetFloat("uNormalInverse", mNormalInverse);
         mCs.SetVector("uRes", new Vector2(mCs_outSize, mCs_outSize));
 
         int _kernel = mCs.FindKernel("CalcDispersion");
@@ -91,6 +172,7 @@ public class LiquidSurface : MonoBehaviour {
                 mCs_workGroupSize, mCs_workGroupSize, 1);
         }
 
+            
         _kernel = mCs.FindKernel("CalcLiquidySurface");
         {
             mCs.SetTexture(_kernel, "out_color", mRt_color);
